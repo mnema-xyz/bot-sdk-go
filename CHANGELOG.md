@@ -3,7 +3,7 @@
 All notable changes to `github.com/mnema-xyz/bot-sdk-go`. Versions follow
 [semver](https://semver.org).
 
-## 0.1.0 (unreleased)
+## 0.1.0 (2026-11-14)
 
 The first tagged version; it is the Go SDK of Mnema Talk 3.1.x in its own
 repository with its history, under the MIT license (earlier copies in the
