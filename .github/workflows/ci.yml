@@ -64,7 +64,7 @@ jobs:
       - name: gocognit
         run: |
           set -euo pipefail
-          out="$(go run github.com/uudashr/gocognit/cmd/gocognit@v1.2.0 -over 15 -ignore '_test\.go' .)"
+          out="$(go run github.com/uudashr/gocognit/cmd/gocognit@v1.3.0 -over 15 -ignore '_test\.go' .)"
           if [ -n "$out" ]; then
             echo "Cognitive complexity over 15:"
             echo "$out"
@@ -74,8 +74,8 @@ jobs:
       - name: staticcheck
         run: |
           set -euo pipefail
-          go run honnef.co/go/tools/cmd/staticcheck@2025.1.1 ./...
-          go run honnef.co/go/tools/cmd/staticcheck@2025.1.1 -tags=contract ./...
+          go run honnef.co/go/tools/cmd/staticcheck@v0.8.2 ./...
+          go run honnef.co/go/tools/cmd/staticcheck@v0.8.2 -tags=contract ./...
 
   contract:
     runs-on: ubuntu-latest
