@@ -4,6 +4,8 @@ on:
   push:
     tags:
       - 'v*.*.*'
+  # A manual run on a tag does the same (for a tag push that started no run).
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -24,6 +26,7 @@ jobs:
       - name: Verify tag is on main
         run: |
           set -euo pipefail
+          case "$GITHUB_REF" in refs/tags/v*) ;; *) echo "::error::run this on a tag vX.Y.Z, not $GITHUB_REF"; exit 1 ;; esac
           git fetch origin main:refs/remotes/origin/main
           tag_commit="$(git rev-parse "$GITHUB_REF_NAME^{commit}")"
           git merge-base --is-ancestor "$tag_commit" origin/main || {
