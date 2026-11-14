@@ -17,7 +17,7 @@ import (
 	"strings"
 	"syscall"
 
-	mnema "github.com/msch128/mnema-talk/sdk/go"
+	mnema "github.com/mnema-xyz/bot-sdk-go"
 )
 
 func deployRows(env string) []mnema.Component {

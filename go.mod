@@ -1,4 +1,4 @@
-module github.com/msch128/mnema-talk/sdk/go
+module github.com/mnema-xyz/bot-sdk-go
 
 go 1.26.0
 

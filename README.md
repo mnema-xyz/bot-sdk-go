@@ -1,27 +1,45 @@
-# Mnema Talk SDK for Go
+# github.com/mnema-xyz/bot-sdk-go
 
-The official Go SDK for [Mnema Talk bots](../../doc/bots.md). It covers the
-bot REST API with its rate limits, the gateway with heartbeats, resume and
-reconnects, slash commands, interactions, message components and modals, and
-the add link of a bot manifest. Its only dependency is
-[gorilla/websocket](https://github.com/gorilla/websocket).
+[![Go Reference](https://pkg.go.dev/badge/github.com/mnema-xyz/bot-sdk-go.svg)](https://pkg.go.dev/github.com/mnema-xyz/bot-sdk-go)
+[![CI](https://github.com/mnema-xyz/bot-sdk-go/actions/workflows/ci.yml/badge.svg)](https://github.com/mnema-xyz/bot-sdk-go/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-The wire contract (routes, frames, close codes, limits) is
-[doc/bots.md](../../doc/bots.md); this README shows how the SDK maps it.
+The official Go SDK for [Mnema Talk](https://mnema.xyz) bots: the REST API with
+its rate limits, the gateway with heartbeats, resume and reconnects, slash
+commands, interactions, message components, modals and the add link.
+
+- Go 1.26 or newer, its only external dependency is
+  [gorilla/websocket](https://github.com/gorilla/websocket).
+- Strongly typed wire models, Discord-compatible JSON representations, builders
+  for components and modals.
+- Non-blocking event dispatch with configurable handler concurrency and panic
+  recovery.
+- Tested on every change against a real Mnema Talk server (contract tests).
+
+**Docs:** [developer guide](https://mnema.xyz/developers/) ·
+[Go SDK reference](https://mnema.xyz/developers/go-sdk/) ·
+[bot platform reference](https://github.com/msch128/mnema-talk/blob/main/doc/bots.md) ·
+[Mnemo, a complete bot built on it](https://github.com/mnema-xyz/talk-mnemo-bot)
 
 ## Install
 
 ```sh
-go get github.com/msch128/mnema-talk/sdk/go@main
+go get github.com/mnema-xyz/bot-sdk-go@latest
 ```
 
-This resolves to a pseudo-version of the latest commit. Tags of the form
-`sdk/go/vX.Y.Z` may follow; then `@latest` works too. The package name is
-`mnema`. It needs Go 1.26 or newer.
+It needs Go 1.26 or newer. The package name is `mnema`.
+
+### Moving from github.com/msch128/mnema-talk/sdk/go
+
+Moving from the earlier monorepo location `github.com/msch128/mnema-talk/sdk/go`:
+replace the dependency with `github.com/mnema-xyz/bot-sdk-go` and update your
+imports from `"github.com/msch128/mnema-talk/sdk/go"` to
+`"github.com/mnema-xyz/bot-sdk-go"`. The API is the same. Old pseudo-versions
+continue to work from the Go module proxy.
 
 ## Quick start
 
-Create a bot and a token first ([Getting started](../../doc/bots.md#getting-started)).
+Create a bot and a token first ([Getting started](https://github.com/msch128/mnema-talk/blob/main/doc/bots.md#getting-started)).
 
 ```go
 package main
@@ -32,7 +50,7 @@ import (
 	"os"
 	"os/signal"
 
-	mnema "github.com/msch128/mnema-talk/sdk/go"
+	mnema "github.com/mnema-xyz/bot-sdk-go"
 )
 
 func main() {
@@ -66,7 +84,7 @@ func main() {
 }
 ```
 
-Three runnable examples read `MNEMA_URL` and `MNEMA_TOKEN`:
+Three runnable examples in [`examples/`](examples) read `MNEMA_URL` and `MNEMA_TOKEN`:
 
 | Example | What it does |
 |---|---|
@@ -78,10 +96,39 @@ Three runnable examples read `MNEMA_URL` and `MNEMA_TOKEN`:
 MNEMA_URL=https://talk.example.org MNEMA_TOKEN=mnb_... go run ./examples/slash
 ```
 
+## Configuration
+
+```go
+mnema.New(mnema.Options{
+	BaseURL:            "https://talk.example.org",
+	Token:              os.Getenv("MNEMA_TOKEN"),
+	Intents:            mnema.IntentGuilds | mnema.IntentGuildMessages,
+	Presence:           &mnema.Presence{Status: mnema.StatusOnline},
+	Logger:             slog.Default(),
+	HTTPClient:         nil, // default client with 60 s timeout
+	MaxRetries:         3,
+	GatewayURL:         "",  // override GET /gateway address
+	HandlerConcurrency: 64,
+})
+```
+
+- `BaseURL`: the server address, e.g. `https://talk.example.org`.
+- `Token`: the bot token (`mnb_...`).
+- `Intents`: bitwise OR of `IntentGuilds` (1), `IntentGuildMembers` (2),
+  `IntentGuildMessages` (512), `IntentGuildMessageReactions` (1024). Interactions
+  need none. Asking for more than the admin allowed closes with `4014`.
+- `Presence`: initial status and activity sent in IDENTIFY. Activity types are
+  `ActivityPlaying` (0), `ActivityListening` (2), `ActivityWatching` (3),
+  `ActivityCustom` (4), `ActivityCompeting` (5).
+- `Logger`: `*slog.Logger`, nil defaults to `slog.Default()`.
+- `HTTPClient`: `*http.Client`, nil uses a default client with a 60-second timeout.
+- `MaxRetries`: bounds how often a request answered with 429 is retried (0 means 3).
+- `GatewayURL`: overrides the gateway address returned by `GET /gateway`.
+- `HandlerConcurrency`: bounds concurrent dispatch handler goroutines (0 means 64).
+
 ## Handlers
 
-Register handlers before `Run`; several per event are allowed and run in
-order.
+Register handlers before `Run`; several per event are allowed and run in order.
 
 | Method | Dispatch | Intent |
 |---|---|---|
@@ -95,29 +142,29 @@ order.
 | `OnInteraction(func(ctx, *Interaction))` | `INTERACTION_CREATE` | none |
 | `OnDispatch(func(ctx, name, json.RawMessage))` | every dispatch, also unknown ones | |
 
-**Concurrency.** Each dispatch runs its handlers in a goroutine of its own, so
-a slow handler never stalls heartbeats or the reading of further events. At
-most `Options.HandlerConcurrency` (default 64) dispatches are handled at once;
-further ones wait for a free slot without holding up the connection, up to
-16 times that many. Beyond that the client drops events with a logged
-warning (never READY, RESUMED or an interaction, which always get their
-turn; more than 2048 interactions in flight end the connection, and the
-resume sends the next one again) rather than stop reading the connection (which would leave heartbeat
-ACKs unread and end in a reconnect that replays the same flood): a handler
-that waits on something slow should hand the work off and return. Events can therefore
-be handled concurrently and out of order: guard shared state yourself. A panic
-in a handler is recovered and logged with its stack; the client keeps
-running. When `Run` returns, the handlers' context is cancelled and `Run`
-waits for them first, so no goroutine outlives it.
+**Concurrency.** Each dispatch runs its handlers in a goroutine of its own, so a
+slow handler never stalls heartbeats or the reading of further events. At most
+`Options.HandlerConcurrency` (default 64) dispatches are handled at once; further
+ones wait for a free slot without holding up the connection, up to 16 times that
+many. Beyond that the client drops events with a logged warning (never READY,
+RESUMED or an interaction, which always get their turn; more than 2048
+interactions in flight end the connection, and the resume sends the next one
+again) rather than stop reading the connection (which would leave heartbeat ACKs
+unread and end in a reconnect that replays the same flood): a handler that waits
+on something slow should hand the work off and return. Events can therefore be
+handled concurrently and out of order: guard shared state yourself. A panic in a
+handler is recovered and logged with its stack; the client keeps running. When
+`Run` returns, the handlers' context is cancelled and `Run` waits for them first,
+so no goroutine outlives it.
 
 The bot's own messages are dispatched to it too; check `m.IsBot` (or compare
 `m.UserID` with `Ready.User.ID`) to ignore them. `m.MentionsUser(id)` tells
 whether a message mentions the bot.
 
 `c.SetPresence(ctx, mnema.Presence{Status: "dnd", Activity: &mnema.Activity{Name: "chess", Type: mnema.ActivityPlaying}})`
-sets the status (gateway op 3). It is kept and sent again with the next
-IDENTIFY and after a resume; `Options.Presence` sets the starting one. The
-server applies at most 5 updates a minute.
+sets the status (gateway op 3). It is kept and sent again with the next IDENTIFY
+and after a resume; `Options.Presence` sets the starting one. The server applies
+at most 5 updates a minute.
 
 ## REST
 
@@ -140,12 +187,12 @@ if errors.As(err, &re) && re.Code == mnema.CodeMissingPermissions { ... }
 
 ### Rate limits
 
-The client keeps within the server's limits before it is told so: **50
-requests per second** per bot and **5 messages per 5 seconds per channel** for
-posts and uploads (each channel has its own bucket, other routes have one per
-route). A `429` is waited out (`retry_after` of the body, else the
-`Retry-After` header; a `global` one holds back every request) and sent again,
-at most `Options.MaxRetries` times (default 3); then the `429` is returned as a
+The client keeps within the server's limits before it is told so: **50 requests
+per second** per bot and **5 messages per 5 seconds per channel** for posts and
+uploads (each channel has its own bucket, other routes have one per route). A
+`429` is waited out (`retry_after` of the body, else the `Retry-After` header; a
+`global` one holds back every request) and sent again, at most
+`Options.MaxRetries` times (default 3); then the `429` is returned as a
 `*RESTError` with `RetryAfter` and `Global`. Waiting stops when the context
 ends. Slow mode answers `429` the same way. Requests carry
 `User-Agent: mnema-talk-sdk-go/<module version>` and nothing personal.
@@ -172,8 +219,8 @@ c.OnInteraction(func(ctx context.Context, i *mnema.Interaction) {
 An `Interaction` has `ID`, `Token`, `Type`, `ChannelID`, `User`, `Message` (the
 message a component is on) and `Data`, plus helpers: `CommandName()`,
 `Option(name)` with `String()`, `Int()`, `Bool()` (zero values when missing),
-`CustomID()`, `Values()`, `Field(customID)` for modal submits, and
-`IsCommand`, `IsComponent`, `IsButton`, `IsSelect`, `IsModalSubmit`.
+`CustomID()`, `Values()`, `Field(customID)` for modal submits, and `IsCommand`,
+`IsComponent`, `IsButton`, `IsSelect`, `IsModalSubmit`.
 
 | Method | Callback | For |
 |---|---|---|
@@ -188,13 +235,13 @@ message a component is on) and `Data`, plus helpers: `CommandName()`,
 The first answer must come within 15 minutes and can be given once (a second
 one returns `mnema.ErrAlreadyAnswered`). `EditReply` and `FollowUp` return a
 nil message for an ephemeral response, which is never stored. `Ephemeral`
-belongs to `Reply`, `DeferReply` and `FollowUp`; `mnema.Edit` (for
-`EditReply` and `Update`) has none, because the first response decides and
-the server refuses flags on an edit. `AllowedMentions` works as on
-`CreateMessage`: without it an answer notifies the members it names, never
-`@all`, `@here` or a role. `i.User` is always set: the server sends the member
-with every interaction. `Ready.User.Handle` is the name members mention the
-bot by (`@bot-...`); `Ready.User.Username` is its display name.
+belongs to `Reply`, `DeferReply` and `FollowUp`; `mnema.Edit` (for `EditReply`
+and `Update`) has none, because the first response decides and the server
+refuses flags on an edit. `AllowedMentions` works as on `CreateMessage`: without
+it an answer notifies the members it names, never `@all`, `@here` or a role.
+`i.User` is always set: the server sends the member with every interaction.
+`Ready.User.Handle` is the name members mention the bot by (`@bot-...`);
+`Ready.User.Username` is its display name.
 
 ## Components and modals
 
@@ -226,7 +273,9 @@ Builders: `ActionRow`, `Button{...}` and `PrimaryButton`, `SecondaryButton`,
 buttons or one select per row, `custom_id` 1 to 100 characters and unique,
 labels, options, placeholders, min/max values, text input lengths); the SDK
 runs them before every request that carries components or a modal, and the
-errors wrap `mnema.ErrInvalidComponent`.
+errors wrap `mnema.ErrInvalidComponent`. The full rules are in
+[Message components](https://github.com/msch128/mnema-talk/blob/main/doc/bots.md#message-components) and
+[Modals](https://github.com/msch128/mnema-talk/blob/main/doc/bots.md#modals).
 
 ## Reconnects
 
@@ -250,7 +299,7 @@ close codes `4004` (bad or revoked token, disabled or banned bot), `4013` and
 ## The add link
 
 A bot's README can offer an add link that opens the server's confirm screen
-with its manifest ([Adding a bot from a manifest](../../doc/bots.md#adding-a-bot-from-a-manifest)):
+with its manifest ([Adding a bot from a manifest](https://github.com/msch128/mnema-talk/blob/main/doc/bots.md#adding-a-bot-from-a-manifest)):
 
 ```go
 link, err := mnema.AddBotLink("https://talk.example.org", mnema.Manifest{
@@ -267,15 +316,37 @@ The manifest is validated first (name, description, https homepage, avatar
 data URL, intent and permission names, commands) and travels in the URL
 fragment, which the browser never sends to the server.
 
-## Tests
+## Versioning and support
+
+- [Semantic versioning](https://semver.org): minor versions add features, major
+  versions may break backwards compatibility, and pre-1.0 versions (`v0.x.y`) may
+  adjust the API while it settles. Every change is tracked in
+  [CHANGELOG.md](CHANGELOG.md).
+- Fixes, including security fixes, go into the latest version only.
+- Report vulnerabilities privately according to [SECURITY.md](SECURITY.md).
+- Questions and bugs: [issues](https://github.com/mnema-xyz/bot-sdk-go/issues).
+  Contributions: [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## Development
 
 ```sh
 go test -race ./...
 ```
 
 The unit tests run offline against `httptest` servers, including a WebSocket
-gateway. The **contract tests** (build tag `contract`) run against a real
-server and are skipped without `MNEMA_CONTRACT_URL`:
+gateway.
+
+### Contract tests
+
+The **contract tests** (build tag `contract`) run against a real server and are
+skipped without `MNEMA_CONTRACT_URL`:
+
+| Variable | Description |
+|---|---|
+| `MNEMA_CONTRACT_URL` | The server URL, e.g. `http://127.0.0.1:8080` |
+| `MNEMA_CONTRACT_TOKEN` | A bot token; the bot can view and send in the channel, allowed `GUILDS`, `GUILD_MESSAGES`, `GUILD_MESSAGE_REACTIONS` |
+| `MNEMA_CONTRACT_CHANNEL` | The test channel ID |
+| `MNEMA_CONTRACT_MEMBER_COOKIE` | The `Cookie` header of a member who can view and send in the channel |
 
 ```sh
 MNEMA_CONTRACT_URL=http://127.0.0.1:8080 MNEMA_CONTRACT_TOKEN=mnb_... \
@@ -283,7 +354,12 @@ MNEMA_CONTRACT_CHANNEL=<channel id> MNEMA_CONTRACT_MEMBER_COOKIE='<Cookie header
 go test -count=1 -tags=contract -run Contract ./...
 ```
 
-The bot must be able to view and send in the channel and be allowed
-`GUILDS|GUILD_MESSAGES|GUILD_MESSAGE_REACTIONS`; the member must be able to view
-and send there. The server's integration suite runs them on every change
-(`TestSDKContract` in `internal/server`, with `SDK_CONTRACT=1`).
+CI runs them on every change against Mnema Talk's current `main`: the `contract`
+job checks out the server, puts this SDK where the server's `TestSDKContract`
+expects it (`talk/sdk/go`), and runs `go test -tags=integration -count=1 -v -run '^TestSDKContract$/^go$' ./internal/server`.
+
+## License
+
+[MIT](LICENSE). Earlier copies in the mnema-talk repository were AGPL-3.0-only;
+0.1.0 and later are MIT. Mnema Talk itself stays AGPL-3.0. Security reports go to
+[SECURITY.md](SECURITY.md).

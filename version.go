@@ -5,7 +5,7 @@ import (
 	"sync"
 )
 
-const modulePath = "github.com/msch128/mnema-talk/sdk/go"
+const modulePath = "github.com/mnema-xyz/bot-sdk-go"
 
 // Version returns the SDK's module version as the Go toolchain recorded it
 // (a tag such as v0.1.0 or a pseudo-version), or "devel" when it is unknown,

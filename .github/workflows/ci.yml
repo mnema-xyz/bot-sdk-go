@@ -1,0 +1,131 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  test:
+    name: test (${{ matrix.go-name }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - go-name: "go.mod"
+            go-version-file: "go.mod"
+          - go-name: "stable"
+            go-version: "stable"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - if: matrix.go-version-file != ''
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: ${{ matrix.go-version-file }}
+          cache: false
+
+      - if: matrix.go-version != ''
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: ${{ matrix.go-version }}
+          cache: false
+
+      - name: gofmt
+        run: |
+          set -euo pipefail
+          out="$(gofmt -l .)"
+          if [ -n "$out" ]; then
+            echo "Unformatted files:"
+            echo "$out"
+            exit 1
+          fi
+
+      - name: go vet
+        run: |
+          set -euo pipefail
+          go vet ./...
+          go vet -tags=contract ./...
+
+      - name: go test -race
+        run: go test -race ./...
+
+      - name: gocognit
+        run: |
+          set -euo pipefail
+          out="$(go run github.com/uudashr/gocognit/cmd/gocognit@v1.2.0 -over 15 -ignore '_test\.go' .)"
+          if [ -n "$out" ]; then
+            echo "Cognitive complexity over 15:"
+            echo "$out"
+            exit 1
+          fi
+
+      - name: staticcheck
+        run: |
+          set -euo pipefail
+          go run honnef.co/go/tools/cmd/staticcheck@2025.1.1 ./...
+          go run honnef.co/go/tools/cmd/staticcheck@2025.1.1 -tags=contract ./...
+
+  contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_USER: mnema
+          POSTGRES_PASSWORD: mnema
+          POSTGRES_DB: mnema_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U mnema -d mnema_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      # Throwaway CI-only database credentials for the service container above.
+      TEST_DATABASE_URL: postgres://mnema:mnema@localhost:5432/mnema_test?sslmode=disable
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          path: sdk
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          repository: msch128/mnema-talk
+          ref: main
+          path: talk
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: talk/go.mod
+          cache: false
+
+      - name: Put the SDK into the server's tree
+        run: |
+          set -euo pipefail
+          rm -rf talk/sdk/go
+          mv sdk talk/sdk/go
+
+      - name: Contract tests against a real server
+        working-directory: talk
+        env:
+          SDK_CONTRACT: '1'
+        run: |
+          set -euo pipefail
+          go test -tags=integration -count=1 -v -run '^TestSDKContract$/^go$' ./internal/server | tee "$RUNNER_TEMP/contract.log"
+          grep -q -- '--- PASS: TestSDKContract/go' "$RUNNER_TEMP/contract.log"

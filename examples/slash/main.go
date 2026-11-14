@@ -17,7 +17,7 @@ import (
 	"syscall"
 	"time"
 
-	mnema "github.com/msch128/mnema-talk/sdk/go"
+	mnema "github.com/mnema-xyz/bot-sdk-go"
 )
 
 var commands = []mnema.CommandInput{
