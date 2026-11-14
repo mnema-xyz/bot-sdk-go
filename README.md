@@ -10,7 +10,7 @@ commands, interactions, message components, modals and the add link.
 
 - Go 1.26 or newer, its only external dependency is
   [gorilla/websocket](https://github.com/gorilla/websocket).
-- Strongly typed wire models, Discord-compatible JSON representations, builders
+- Strongly typed wire models, JSON representations, builders
   for components and modals.
 - Non-blocking event dispatch with configurable handler concurrency and panic
   recovery.
