@@ -235,13 +235,13 @@ message a component is on) and `Data`, plus helpers: `CommandName()`,
 The first answer must come within 15 minutes and can be given once (a second
 one returns `mnema.ErrAlreadyAnswered`). `EditReply` and `FollowUp` return a
 nil message for an ephemeral response, which is never stored. `Ephemeral`
-belongs to `Reply`, `DeferReply` and `FollowUp`; `mnema.Edit` (for `EditReply`
-and `Update`) has none, because the first response decides and the server
-refuses flags on an edit. `AllowedMentions` works as on `CreateMessage`: without
-it an answer notifies the members it names, never `@all`, `@here` or a role.
-`i.User` is always set: the server sends the member with every interaction.
-`Ready.User.Handle` is the name members mention the bot by (`@bot-...`);
-`Ready.User.Username` is its display name.
+belongs to `Reply`, `DeferReply` and `FollowUp`; `mnema.Edit` (for
+`EditReply` and `Update`) has none, because the first response decides and
+the server refuses flags on an edit. `AllowedMentions` works as on
+`CreateMessage`: without it an answer notifies the members it names, never
+`@all`, `@here` or a role. `i.User` is always set: the server sends the member
+with every interaction. `Ready.User.Handle` is the name members mention the
+bot by (for example `@mnemo`); `Ready.User.Username` is its display name.
 
 ## Components and modals
 
