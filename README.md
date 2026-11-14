@@ -18,7 +18,7 @@ commands, interactions, message components, modals and the add link.
 
 **Docs:** [developer guide](https://mnema.xyz/developers/) ·
 [Go SDK reference](https://mnema.xyz/developers/go-sdk/) ·
-[bot platform reference](https://github.com/msch128/mnema-talk/blob/main/doc/bots.md) ·
+[bot platform reference](https://github.com/mnema-xyz/talk/blob/main/doc/bots.md) ·
 [Mnemo, a complete bot built on it](https://github.com/mnema-xyz/talk-mnemo-bot)
 
 ## Install
@@ -39,7 +39,7 @@ continue to work from the Go module proxy.
 
 ## Quick start
 
-Create a bot and a token first ([Getting started](https://github.com/msch128/mnema-talk/blob/main/doc/bots.md#getting-started)).
+Create a bot and a token first ([Getting started](https://github.com/mnema-xyz/talk/blob/main/doc/bots.md#getting-started)).
 
 ```go
 package main
@@ -235,13 +235,13 @@ message a component is on) and `Data`, plus helpers: `CommandName()`,
 The first answer must come within 15 minutes and can be given once (a second
 one returns `mnema.ErrAlreadyAnswered`). `EditReply` and `FollowUp` return a
 nil message for an ephemeral response, which is never stored. `Ephemeral`
-belongs to `Reply`, `DeferReply` and `FollowUp`; `mnema.Edit` (for `EditReply`
-and `Update`) has none, because the first response decides and the server
-refuses flags on an edit. `AllowedMentions` works as on `CreateMessage`: without
-it an answer notifies the members it names, never `@all`, `@here` or a role.
-`i.User` is always set: the server sends the member with every interaction.
-`Ready.User.Handle` is the name members mention the bot by (`@bot-...`);
-`Ready.User.Username` is its display name.
+belongs to `Reply`, `DeferReply` and `FollowUp`; `mnema.Edit` (for
+`EditReply` and `Update`) has none, because the first response decides and
+the server refuses flags on an edit. `AllowedMentions` works as on
+`CreateMessage`: without it an answer notifies the members it names, never
+`@all`, `@here` or a role. `i.User` is always set: the server sends the member
+with every interaction. `Ready.User.Handle` is the name members mention the
+bot by (for example `@mnemo`); `Ready.User.Username` is its display name.
 
 ## Components and modals
 
@@ -274,8 +274,8 @@ buttons or one select per row, `custom_id` 1 to 100 characters and unique,
 labels, options, placeholders, min/max values, text input lengths); the SDK
 runs them before every request that carries components or a modal, and the
 errors wrap `mnema.ErrInvalidComponent`. The full rules are in
-[Message components](https://github.com/msch128/mnema-talk/blob/main/doc/bots.md#message-components) and
-[Modals](https://github.com/msch128/mnema-talk/blob/main/doc/bots.md#modals).
+[Message components](https://github.com/mnema-xyz/talk/blob/main/doc/bots.md#message-components) and
+[Modals](https://github.com/mnema-xyz/talk/blob/main/doc/bots.md#modals).
 
 ## Reconnects
 
@@ -299,7 +299,7 @@ close codes `4004` (bad or revoked token, disabled or banned bot), `4013` and
 ## The add link
 
 A bot's README can offer an add link that opens the server's confirm screen
-with its manifest ([Adding a bot from a manifest](https://github.com/msch128/mnema-talk/blob/main/doc/bots.md#adding-a-bot-from-a-manifest)):
+with its manifest ([Adding a bot from a manifest](https://github.com/mnema-xyz/talk/blob/main/doc/bots.md#adding-a-bot-from-a-manifest)):
 
 ```go
 link, err := mnema.AddBotLink("https://talk.example.org", mnema.Manifest{
