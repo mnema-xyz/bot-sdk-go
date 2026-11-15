@@ -45,7 +45,22 @@ type Interaction struct {
 
 // InteractionMember wraps the member of an interaction, as Discord does.
 type InteractionMember struct {
-	User User `json:"user"`
+	User        User   `json:"user"`
+	Permissions string `json:"permissions,omitempty"`
+}
+
+// HasPermission reports whether the member holds the given permission in the
+// channel where the interaction occurred. Administrator grants all permissions.
+func (m *InteractionMember) HasPermission(p Permission) bool {
+	if m == nil {
+		return false
+	}
+	return HasPermission(m.Permissions, p)
+}
+
+// HasPermission reports whether the invoking member holds the given permission.
+func (i *Interaction) HasPermission(p Permission) bool {
+	return i.Member.HasPermission(p)
 }
 
 // InteractionData is the data of an interaction; which fields are set

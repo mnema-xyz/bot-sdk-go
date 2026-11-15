@@ -76,19 +76,39 @@ type Upload struct {
 
 // Command is a registered slash command.
 type Command struct {
-	ID          string          `json:"id"`
-	BotID       string          `json:"bot_id"`
-	Name        string          `json:"name"`
-	Description string          `json:"description"`
-	Options     []CommandOption `json:"options"`
-	Disabled    bool            `json:"disabled"`
+	ID                       string          `json:"id"`
+	BotID                    string          `json:"bot_id"`
+	Name                     string          `json:"name"`
+	Description              string          `json:"description"`
+	Options                  []CommandOption `json:"options"`
+	Disabled                 bool            `json:"disabled"`
+	DefaultMemberPermissions *string         `json:"default_member_permissions,omitempty"`
 }
 
 // CommandInput is a command to register.
 type CommandInput struct {
-	Name        string          `json:"name"`
-	Description string          `json:"description"`
-	Options     []CommandOption `json:"options"`
+	Name                     string          `json:"name"`
+	Description              string          `json:"description"`
+	Options                  []CommandOption `json:"options"`
+	DefaultMemberPermissions any             `json:"default_member_permissions,omitempty"`
+}
+
+// MarshalJSON serializes CommandInput, converting integer or Permission bit values
+// of DefaultMemberPermissions to a decimal string as expected by the REST API.
+func (c CommandInput) MarshalJSON() ([]byte, error) {
+	type plain CommandInput
+	p := plain(c)
+	switch v := p.DefaultMemberPermissions.(type) {
+	case Permission:
+		p.DefaultMemberPermissions = strconv.FormatUint(uint64(v), 10)
+	case uint64:
+		p.DefaultMemberPermissions = strconv.FormatUint(v, 10)
+	case int64:
+		p.DefaultMemberPermissions = strconv.FormatInt(v, 10)
+	case int:
+		p.DefaultMemberPermissions = strconv.Itoa(v)
+	}
+	return json.Marshal(p)
 }
 
 // OptionType is the type of a command option.

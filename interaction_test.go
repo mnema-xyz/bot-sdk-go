@@ -127,3 +127,71 @@ func TestAModalSubmitCannotOpenAnotherModal(t *testing.T) {
 		t.Fatal("a modal submit opened a modal")
 	}
 }
+
+func TestInteractionPermissions(t *testing.T) {
+	// Member with ViewChannel (2) and SendMessages (4) = 6
+	i := decodeInteraction(t, `{"member":{"user":{"id":"u","username":"max"},"permissions":"6"},"type":2,"data":{"name":"ping"}}`, nil)
+	if i.Member.Permissions != "6" {
+		t.Fatalf("permissions = %q, want 6", i.Member.Permissions)
+	}
+	if !i.HasPermission(PermissionViewChannel) || !i.HasPermission(PermissionSendMessages) {
+		t.Fatal("expected ViewChannel and SendMessages to be true")
+	}
+	if i.HasPermission(PermissionAdministrator) || i.HasPermission(PermissionBanMembers) {
+		t.Fatal("expected Admin and Ban to be false")
+	}
+
+	// Administrator (1) grants all permissions
+	admin := decodeInteraction(t, `{"member":{"user":{"id":"u","username":"admin"},"permissions":"1"},"type":2,"data":{"name":"ping"}}`, nil)
+	if !admin.HasPermission(PermissionBanMembers) || !admin.HasPermission(PermissionAdministrator) {
+		t.Fatal("admin bit must grant all permissions")
+	}
+
+	// Missing permissions (empty/nil)
+	empty := decodeInteraction(t, `{"member":{"user":{"id":"u","username":"user"}},"type":2,"data":{"name":"ping"}}`, nil)
+	if empty.HasPermission(PermissionViewChannel) {
+		t.Fatal("missing permissions must return false")
+	}
+
+	var nilMember *InteractionMember
+	if nilMember.HasPermission(PermissionViewChannel) {
+		t.Fatal("nil member must return false")
+	}
+}
+
+func TestCommandInputPermissionsMarshal(t *testing.T) {
+	tests := []struct {
+		input CommandInput
+		want  string
+	}{
+		{
+			input: CommandInput{Name: "ban", DefaultMemberPermissions: PermissionBanMembers},
+			want:  `{"name":"ban","description":"","options":null,"default_member_permissions":"524288"}`,
+		},
+		{
+			input: CommandInput{Name: "combo", DefaultMemberPermissions: PermissionAdministrator | PermissionViewChannel},
+			want:  `{"name":"combo","description":"","options":null,"default_member_permissions":"3"}`,
+		},
+		{
+			input: CommandInput{Name: "str", DefaultMemberPermissions: "6"},
+			want:  `{"name":"str","description":"","options":null,"default_member_permissions":"6"}`,
+		},
+		{
+			input: CommandInput{Name: "arr", DefaultMemberPermissions: []string{"ban_members"}},
+			want:  `{"name":"arr","description":"","options":null,"default_member_permissions":["ban_members"]}`,
+		},
+		{
+			input: CommandInput{Name: "none"},
+			want:  `{"name":"none","description":"","options":null}`,
+		},
+	}
+	for _, tc := range tests {
+		b, err := json.Marshal(tc.input)
+		if err != nil {
+			t.Fatalf("Marshal(%s): %v", tc.input.Name, err)
+		}
+		if string(b) != tc.want {
+			t.Errorf("Marshal(%s) = %s, want %s", tc.input.Name, string(b), tc.want)
+		}
+	}
+}
