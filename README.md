@@ -216,11 +216,23 @@ c.OnInteraction(func(ctx context.Context, i *mnema.Interaction) {
 })
 ```
 
-An `Interaction` has `ID`, `Token`, `Type`, `ChannelID`, `User`, `Message` (the
+An `Interaction` has `ID`, `Token`, `Type`, `ChannelID`, `User`, `Member`
+(including channel permissions in `Member.Permissions`), `Message` (the
 message a component is on) and `Data`, plus helpers: `CommandName()`,
 `Option(name)` with `String()`, `Int()`, `Bool()` (zero values when missing),
-`CustomID()`, `Values()`, `Field(customID)` for modal submits, and `IsCommand`,
+`CustomID()`, `Values()`, `Field(customID)` for modal submits, `HasPermission(perm)`
+to check member permissions in the channel, and `IsCommand`,
 `IsComponent`, `IsButton`, `IsSelect`, `IsModalSubmit`.
+
+### Command permissions (DefaultMemberPermissions)
+
+A command can restrict who can see and run it in a channel with `DefaultMemberPermissions`:
+- `nil`: available to everyone who can use commands in the channel.
+- `"0"` or `[]string{}`: available to nobody except the Owner and members with Administrator.
+- `mnema.Permission` bitfield (e.g. `mnema.PermissionBanMembers` or `mnema.PermissionAdministrator | mnema.PermissionManageChannels`), a slice of permission keys (e.g. `[]string{"ban_members"}`), or a decimal bitfield string (`"524288"`).
+
+> [!WARNING]
+> Mnema's permission bit values are **not** Discord's bit values (e.g. `discord.js`'s `PermissionFlagsBits`). Do not reuse Discord's permission constants; use `mnema.Permission` constants, pass permission keys (e.g. `[]string{"administrator"}`), or compute them from Mnema's catalogue (`GET /api/permissions`).
 
 | Method | Callback | For |
 |---|---|---|
