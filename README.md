@@ -170,9 +170,10 @@ at most 5 updates a minute.
 
 `c.REST` (or `mnema.NewREST(opts)` without a gateway) has one method per route:
 `Me`, `Gateway`, `Channels`, `Messages(ctx, ch, mnema.MessageQuery{Limit, Before, After, Around})`,
-`Message`, `CreateMessage(ctx, ch, mnema.MessageCreate{Content, Embeds, Components, AllowedMentions, MessageReference, ParentID})`,
+`Message`, `CreateMessage(ctx, ch, mnema.MessageCreate{Content, Embeds, Components, AllowedMentions, MessageReference, ParentID, LifetimeSeconds})`,
 `EditMessage(ctx, ch, id, mnema.MessageEdit{Content, Components})`, `DeleteMessage`,
 `AddReaction`, `RemoveReaction`, `Upload(ctx, ch, mnema.Upload{Name, Reader, Content, ...})`,
+`DownloadAttachment(ctx, id, mnema.DownloadOptions{MaxBytes, Timeout})`,
 `Members`, `Member`, `Commands`, `SetCommands`, `CreateCommand`, `DeleteCommand`.
 Ids are UUID strings. Optional fields of edits are pointers: `mnema.Ptr("text")`;
 `Components: &[]mnema.Component{}` removes the components.
@@ -184,6 +185,35 @@ codes (`mnema.CodeUnknownChannel`, `CodeMissingPermissions`, ...):
 var re *mnema.RESTError
 if errors.As(err, &re) && re.Code == mnema.CodeMissingPermissions { ... }
 ```
+
+A `404` also matches `mnema.ErrNotFound`: `errors.Is(err, mnema.ErrNotFound)`.
+
+### Downloading attachments
+
+A message's `Attachments` carry `ID`, `URL` (`/api/bot/v1/media/{id}`),
+`Filename`, `ContentType` and `Size`, next to the same values under Mnema's
+internal names (`OriginalFilename`, `MimeType`, `SizeBytes`). A
+`LifetimeSeconds` message carries `ExpiresAt`.
+`DownloadAttachment` streams a file the bot can view:
+
+```go
+d, err := c.REST.DownloadAttachment(ctx, m.Attachments[0].ID, mnema.DownloadOptions{
+	MaxBytes: 10 << 20, Timeout: 30 * time.Second,
+})
+if errors.Is(err, mnema.ErrNotFound) { ... } // gone, or not viewable by the bot
+if err != nil { ... }
+defer d.Body.Close()
+data, err := io.ReadAll(d.Body) // a *mnema.MaxBytesError past MaxBytes
+```
+
+`d.ContentType`, `d.Filename` (from `Content-Disposition`) and `d.Size` (the
+`Content-Length`, `-1` when unknown) describe the file. With `MaxBytes`, a larger
+announced size is refused before the body is read, and a body that turns out
+larger fails while reading, with a `*mnema.MaxBytesError`. `Timeout` covers
+reading the body too; closing `Body` ends it. Redirects are not followed (a
+`3xx` is a `*RESTError`). The server answers `404`, never `403`, for a file the
+bot cannot view, so an id's existence is not leaked
+([Downloading attachments](https://github.com/mnema-xyz/talk/blob/main/doc/bots.md#downloading-attachments)).
 
 ### Rate limits
 

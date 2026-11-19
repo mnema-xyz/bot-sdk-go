@@ -16,6 +16,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"math/rand/v2"
 	"net/http"
 	"regexp"
@@ -62,6 +63,7 @@ func TestContractWithARunningServer(t *testing.T) {
 		{"Run identifies and READY carries the session and the granted intents", b.connect},
 		{"a posted message comes back as MESSAGE_CREATE", b.postAndReceive},
 		{"a message with a lifetime carries its end, in the answer, the event and a read", b.timed},
+		{"an uploaded file carries the documented fields and downloads again", b.attachment},
 		{"a command is registered, run by the member and replied to", b.command},
 		{"a button click reaches the bot, which updates the message the member sees", b.button},
 		{"a modal opened on a click is submitted by the member and answered", b.modal},
@@ -150,6 +152,35 @@ func (b *contractBot) timed(t *testing.T) {
 	again, err := b.c.REST.Message(ctx, b.env.channel, posted.ID)
 	if err != nil || again.ExpiresAt == nil || !again.ExpiresAt.Equal(*posted.ExpiresAt) {
 		t.Fatalf("Message = %+v, %v", again, err)
+	}
+}
+
+func (b *contractBot) attachment(t *testing.T) {
+	ctx := background(t)
+	data := "contract go " + b.run
+	posted, err := b.c.REST.Upload(ctx, b.env.channel, Upload{Name: "contract.txt", Reader: strings.NewReader(data)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	read, err := b.c.REST.Message(ctx, b.env.channel, posted.ID)
+	if err != nil || len(read.Attachments) != 1 {
+		t.Fatalf("Message = %+v, %v", read, err)
+	}
+	a := read.Attachments[0]
+	if a.Filename != "contract.txt" || a.ContentType == "" || a.Size != int64(len(data)) || a.URL != BasePath+"/media/"+a.ID {
+		t.Fatalf("attachment = %+v", a)
+	}
+	d, err := b.c.REST.DownloadAttachment(ctx, a.ID, DownloadOptions{MaxBytes: 1 << 20, Timeout: 30 * time.Second})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = d.Body.Close() }()
+	got, err := io.ReadAll(d.Body)
+	if err != nil || string(got) != data || d.Filename != "contract.txt" {
+		t.Fatalf("download = %q (%+v), %v", got, d, err)
+	}
+	if _, err := b.c.REST.DownloadAttachment(ctx, "00000000-0000-0000-0000-000000000000", DownloadOptions{}); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("unknown attachment: err = %v, want ErrNotFound", err)
 	}
 }
 
