@@ -333,9 +333,10 @@ upgrade, and identifies with the intents and the presence. It sends
 heartbeats every interval, the first after a random part of it; a heartbeat
 whose ACK has not come by the next one drops the connection. After a drop it
 reconnects and **resumes** (session ID and last sequence number, within the
-server's 2 minutes) at READY's `resume_gateway_url`, of which only the path
-and query are used: the scheme, host and port stay those of the address the
-session connected to; when the server answers `INVALID_SESSION` it identifies
+server's 2 minutes) at READY's `resume_gateway_url` when it names the host
+and port of the address the session connected to, using only its path and
+query on that address's scheme; any other resume address falls back to the
+address the session connected to; when the server answers `INVALID_SESSION` it identifies
 again on the same connection, and after `4000`, `4003` or `4005` it starts a
 new session. Reconnects wait with exponential backoff and jitter from 1 to 60
 seconds (at least 30 seconds after `4008`). Outgoing frames stay within 4096

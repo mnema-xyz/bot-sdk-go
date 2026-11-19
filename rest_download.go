@@ -99,7 +99,7 @@ func (r *REST) download(ctx context.Context, path string) (*http.Response, error
 		hr.Header.Set("User-Agent", userAgent())
 		res, err := hc.Do(hr)
 		if err != nil {
-			return nil, fmt.Errorf("mnema: GET %s: %w", path, err)
+			return nil, r.requestError("", request{method: http.MethodGet, path: path}, err)
 		}
 		if res.StatusCode >= 200 && res.StatusCode <= 299 {
 			return res, nil

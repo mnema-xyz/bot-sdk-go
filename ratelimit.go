@@ -155,7 +155,9 @@ func bucketKey(method, path string) string {
 
 // tokenIndex is the index of the path segment that carries an interaction
 // or webhook token (/interactions/{id}/{token}/..., /webhooks/{id}/{token}),
-// or -1 when the route has none.
+// or -1 when the route has none. No route of this SDK starts with /webhooks
+// yet; the match is there so that a webhook route added later is redacted
+// (and shares one bucket per route) from the start.
 func tokenIndex(parts []string) int {
 	if len(parts) >= 4 && parts[0] == "" && (parts[1] == "interactions" || parts[1] == "webhooks") {
 		return 3

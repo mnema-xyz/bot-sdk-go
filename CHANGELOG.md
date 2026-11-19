@@ -5,9 +5,9 @@ All notable changes to `github.com/mnema-xyz/bot-sdk-go`. Versions follow
 
 ## Unreleased
 
-- The gateway resumes at the path and query of READY's `resume_gateway_url` on the scheme, host and port of the address the session connected to; an unparsable resume address uses that address.
+- The gateway resumes at READY's `resume_gateway_url` only when it names the host and port of the address the session connected to (or is relative), and then uses only its path and query on that address's scheme. Any other resume address, an unparsable one, or one with a `..` path segment falls back to the address the session connected to.
 - The default REST client no longer follows redirects: a redirect answer fails the call with a `*RESTError` carrying its status. A client passed as `Options.HTTPClient` keeps its own redirect policy.
-- Errors of failed REST requests name interaction and webhook routes with the token replaced by `:token`, also in the wrapped `*url.Error`.
+- Errors of failed REST requests and downloads name interaction and webhook routes with the token replaced by `:token`, also in the wrapped `*url.Error`. Routes under `/webhooks/{id}/{token}` (none in the SDK yet) share one rate-limit bucket per route, as interaction routes do.
 
 ## 0.3.0 (2026-11-19)
 
