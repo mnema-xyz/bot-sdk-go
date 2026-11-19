@@ -92,7 +92,7 @@ jobs:
 
   # The SDK runs against talk's main (what comes next) and its latest release
   # (what people run), so a change that only works on unreleased talk shows.
-  contract:
+  contract-talk:
     name: contract (talk ${{ matrix.talk }})
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -160,3 +160,15 @@ jobs:
           set -euo pipefail
           go test -tags=integration -count=1 -v -run '^TestSDKContract$/^go$' ./internal/server | tee "$RUNNER_TEMP/contract.log"
           grep -q -- '--- PASS: TestSDKContract/go' "$RUNNER_TEMP/contract.log"
+
+  # The required check: green only when both contract runs passed.
+  contract:
+    needs: contract-talk
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: both contract runs passed
+        env:
+          RESULT: ${{ needs.contract-talk.result }}
+        run: test "$RESULT" = success
