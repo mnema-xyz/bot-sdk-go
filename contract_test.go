@@ -191,9 +191,7 @@ func (b *contractBot) command(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if cmd.Name != "contract-echo-go" || len(cmd.Options) != 1 || cmd.Options[0].Type != OptionString || !cmd.Options[0].Required {
-		t.Fatalf("command = %+v", cmd)
-	}
+	checkEchoCommand(t, cmd)
 	b.commandID = cmd.ID
 	list, err := b.c.REST.Commands(ctx)
 	if err != nil || !hasCommand(list, cmd.ID) {
@@ -215,6 +213,14 @@ func (b *contractBot) command(t *testing.T) {
 		t.Fatalf("reply = %+v", m)
 	}
 	answersFollowTheirRoutes(t, i)
+}
+
+// checkEchoCommand checks the registered command as the server answered it.
+func checkEchoCommand(t *testing.T, cmd *Command) {
+	t.Helper()
+	if cmd.Name != "contract-echo-go" || len(cmd.Options) != 1 || cmd.Options[0].Type != OptionString || !cmd.Options[0].Required {
+		t.Fatalf("command = %+v", cmd)
+	}
 }
 
 // answersFollowTheirRoutes sends what each answer route takes:

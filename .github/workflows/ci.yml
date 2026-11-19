@@ -71,15 +71,35 @@ jobs:
             exit 1
           fi
 
+      - name: gocyclo
+        run: |
+          set -euo pipefail
+          out="$(go run github.com/fzipp/gocyclo/cmd/gocyclo@v0.6.0 -over 15 . || true)"
+          if [ -n "$out" ]; then
+            echo "Cyclomatic complexity over 15:"
+            echo "$out"
+            exit 1
+          fi
+
+      - name: govulncheck
+        run: go run golang.org/x/vuln/cmd/govulncheck@v1.9.0 ./...
+
       - name: staticcheck
         run: |
           set -euo pipefail
           go run honnef.co/go/tools/cmd/staticcheck@v0.8.2 ./...
           go run honnef.co/go/tools/cmd/staticcheck@v0.8.2 -tags=contract ./...
 
+  # The SDK runs against talk's main (what comes next) and its latest release
+  # (what people run), so a change that only works on unreleased talk shows.
   contract:
+    name: contract (talk ${{ matrix.talk }})
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        talk: [main, release]
     services:
       postgres:
         image: postgres:18-alpine
@@ -103,11 +123,22 @@ jobs:
           persist-credentials: false
           path: sdk
 
+      - name: Which talk
+        id: talk
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TALK: ${{ matrix.talk }}
+        run: |
+          set -euo pipefail
+          if [ "$TALK" = main ]; then ref=main; else ref="$(gh api repos/mnema-xyz/talk/releases/latest --jq .tag_name)"; fi
+          echo "talk ref: $ref"
+          echo "ref=$ref" >> "$GITHUB_OUTPUT"
+
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
           repository: mnema-xyz/talk
-          ref: main
+          ref: ${{ steps.talk.outputs.ref }}
           path: talk
 
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0

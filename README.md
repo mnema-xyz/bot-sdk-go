@@ -396,8 +396,8 @@ MNEMA_CONTRACT_CHANNEL=<channel id> MNEMA_CONTRACT_MEMBER_COOKIE='<Cookie header
 go test -count=1 -tags=contract -run Contract ./...
 ```
 
-CI runs them on every change against Mnema Talk's current `main`: the `contract`
-job checks out the server, puts this SDK where the server's `TestSDKContract`
+CI runs them on every change twice, against Mnema Talk's `main` and against its
+latest release: each `contract` job checks out the server, puts this SDK where the server's `TestSDKContract`
 expects it (`talk/sdk/go`), and runs `go test -tags=integration -count=1 -v -run '^TestSDKContract$/^go$' ./internal/server`.
 
 ## License

@@ -94,7 +94,13 @@ func TestResponsesUseTheDocumentedCallbacksAndRoutes(t *testing.T) {
 		{"POST", "/api/bot/v1/interactions/i2/tok/callback", `{"data":{"content":"clicked","components":[]},"type":7}`},
 		{"POST", "/api/bot/v1/interactions/i3/tok/callback", `{"data":{"custom_id":"fb","title":"Feedback","components":[{"type":1,"components":[{"type":4,"custom_id":"subject","style":1,"label":"Subject"}]}]},"type":9}`},
 	}
-	got := reqs()
+	checkRequests(t, reqs(), want)
+}
+
+// checkRequests compares the recorded requests with the wanted method, path
+// and body, in order.
+func checkRequests(t *testing.T, got []recorded, want []struct{ method, path, body string }) {
+	t.Helper()
 	if len(got) != len(want) {
 		t.Fatalf("%d requests, want %d", len(got), len(want))
 	}

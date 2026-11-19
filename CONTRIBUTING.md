@@ -21,8 +21,9 @@ them on every pull request.
   only `gorilla/websocket`).
 - **Limits**: Go source files at most 400 lines, test files at most 800 lines,
   functions at most 80 lines (raw line span incl. blanks and comments), cognitive
-  complexity at most 15 (`gocognit`). Split code rather than raising a limit; no
-  allowlists, no exceptions.
+  complexity at most 15 (`gocognit`, code) and cyclomatic complexity at most 15
+  (`gocyclo`, code and tests). Split code rather than raising a limit; no
+  allowlists, no exceptions. CI also runs `govulncheck`.
 - **Behaviour tests.** Test what a bot sees (requests, frames, events), not
   internals.
 - **Commits** follow [Conventional Commits](https://www.conventionalcommits.org)
