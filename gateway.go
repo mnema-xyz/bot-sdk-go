@@ -5,6 +5,8 @@ import (
 	"errors"
 	"math/rand/v2"
 	"net/http"
+	"net/url"
+	"slices"
 	"strings"
 	"time"
 
@@ -147,7 +149,7 @@ func (c *Client) connectOnce(ctx context.Context, d *dispatcher) outcome {
 	// characters plus embeds and components); a larger one ends the
 	// connection instead of the bot's memory.
 	ws.SetReadLimit(MaxGatewayFrame)
-	cn := newConn(c, ws)
+	cn := newConn(c, ws, u)
 	out := cn.run(ctx, d)
 	if newSessionAfter(out.code) {
 		c.updateSession(func(s *session) { *s = session{} })
@@ -185,4 +187,53 @@ func wsURL(base string) string {
 		return "ws://" + rest
 	}
 	return base
+}
+
+// sanitizeResumeURL is the address a resume dials. The upgrade carries the
+// bot token, so a resume address never leaves the configured server: READY's
+// resume_gateway_url is used only when it names the host and port of base,
+// the address the session's connection dialled (or is relative), and then
+// only its path and query, on base's scheme. Any other resume address, one
+// that does not parse, or one whose path has a ".." segment gives base
+// unchanged. An empty resume address stays empty (the next connection uses
+// the normal address).
+func sanitizeResumeURL(resume, base string) string {
+	if resume == "" {
+		return ""
+	}
+	b, err := url.Parse(base)
+	if err != nil {
+		return base
+	}
+	t, err := url.Parse(resume)
+	if err != nil || !sameEndpoint(t, b) || slices.Contains(strings.Split(t.Path, "/"), "..") {
+		return base
+	}
+	safe := url.URL{Scheme: b.Scheme, User: b.User, Host: b.Host, Path: b.Path, RawPath: b.RawPath, RawQuery: t.RawQuery}
+	if t.Path != "" {
+		safe.Path, safe.RawPath = t.Path, t.RawPath
+	}
+	return safe.String()
+}
+
+// sameEndpoint reports whether t is relative, or a ws or wss address of b's
+// hostname and port (the scheme's default port when none is given).
+func sameEndpoint(t, b *url.URL) bool {
+	if t.Scheme == "" && t.Host == "" {
+		return true
+	}
+	if t.Scheme != "ws" && t.Scheme != "wss" {
+		return false
+	}
+	return strings.EqualFold(t.Hostname(), b.Hostname()) && portOf(t) == portOf(b)
+}
+
+func portOf(u *url.URL) string {
+	if p := u.Port(); p != "" {
+		return p
+	}
+	if u.Scheme == "wss" || u.Scheme == "https" {
+		return "443"
+	}
+	return "80"
 }

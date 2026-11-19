@@ -31,6 +31,7 @@ type frame struct {
 type conn struct {
 	c    *Client
 	ws   *websocket.Conn
+	url  string // the address this connection dialled
 	out  chan []byte
 	done chan struct{}
 	wg   sync.WaitGroup
@@ -42,8 +43,8 @@ type conn struct {
 	closeReason string
 }
 
-func newConn(c *Client, ws *websocket.Conn) *conn {
-	cn := &conn{c: c, ws: ws, out: make(chan []byte, 16), done: make(chan struct{})}
+func newConn(c *Client, ws *websocket.Conn, u string) *conn {
+	cn := &conn{c: c, ws: ws, url: u, out: make(chan []byte, 16), done: make(chan struct{})}
 	cn.acked.Store(true)
 	return cn
 }
@@ -181,7 +182,8 @@ func (cn *conn) handleDispatch(ctx context.Context, f frame, d *dispatcher) erro
 		if err := json.Unmarshal(f.D, &r); err != nil {
 			return fmt.Errorf("mnema: undecodable READY: %w", err)
 		}
-		cn.c.updateSession(func(s *session) { s.id, s.resumeURL = r.SessionID, r.ResumeGatewayURL })
+		resume := sanitizeResumeURL(r.ResumeGatewayURL, cn.url)
+		cn.c.updateSession(func(s *session) { s.id, s.resumeURL = r.SessionID, resume })
 		cn.healthy.Store(true)
 	case "RESUMED":
 		cn.healthy.Store(true)

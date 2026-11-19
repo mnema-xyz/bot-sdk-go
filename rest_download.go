@@ -85,7 +85,7 @@ func (r *REST) DownloadAttachment(ctx context.Context, id string, opts DownloadO
 // answer with its body open; other answers become errors.
 func (r *REST) download(ctx context.Context, path string) (*http.Response, error) {
 	hc := *r.http
-	hc.CheckRedirect = func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }
+	hc.CheckRedirect = refuseRedirect
 	key := bucketKey(http.MethodGet, path)
 	for attempt := 0; ; attempt++ {
 		if err := r.limits.acquire(ctx, key); err != nil {
@@ -99,7 +99,7 @@ func (r *REST) download(ctx context.Context, path string) (*http.Response, error
 		hr.Header.Set("User-Agent", userAgent())
 		res, err := hc.Do(hr)
 		if err != nil {
-			return nil, fmt.Errorf("mnema: GET %s: %w", path, err)
+			return nil, r.requestError("", request{method: http.MethodGet, path: path}, err)
 		}
 		if res.StatusCode >= 200 && res.StatusCode <= 299 {
 			return res, nil
