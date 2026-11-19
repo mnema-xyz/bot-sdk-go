@@ -155,10 +155,15 @@ type EmbedField struct {
 	Inline bool   `json:"inline,omitempty"`
 }
 
-// Attachment is a file of a message.
+// Attachment is a file of a message; REST.DownloadAttachment(ID) reads it.
+// Filename, ContentType and Size carry the same values as OriginalFilename,
+// MimeType and SizeBytes, under the names doc/bots.md documents first.
 type Attachment struct {
 	ID               string `json:"id"`
 	URL              string `json:"url"`
+	Filename         string `json:"filename,omitempty"`
+	ContentType      string `json:"content_type,omitempty"`
+	Size             int64  `json:"size,omitempty"`
 	OriginalFilename string `json:"original_filename"`
 	MimeType         string `json:"mime_type"`
 	SizeBytes        int64  `json:"size_bytes"`
