@@ -56,9 +56,7 @@ func TestDispatchesAreDecodedAndDeliveredToTheirHandlers(t *testing.T) {
 	fc := g.next(t)
 	fc.expect(t, opIdentify)
 	fc.ready(t, "s-1")
-	if r := waitFor(t, ready, "READY"); r.SessionID != "s-1" || r.User.ID != "u-bot" || r.User.BotID != "b-1" || !r.User.Bot {
-		t.Fatalf("ready = %+v", r)
-	}
+	checkReady(t, waitFor(t, ready, "READY"), "s-1")
 	fc.dispatch(t, 2, "MESSAGE_CREATE", map[string]any{"id": "m-1", "channel_id": "c-1", "content": "hi", "mentions": []string{"u-bot"}})
 	if m := waitFor(t, created, "MESSAGE_CREATE"); m.ID != "m-1" || m.Content != "hi" || !m.MentionsUser("u-bot") {
 		t.Fatalf("message = %+v", m)
@@ -82,6 +80,14 @@ func TestDispatchesAreDecodedAndDeliveredToTheirHandlers(t *testing.T) {
 	seen := map[string]bool{}
 	for !seen["SOMETHING_NEW"] {
 		seen[waitFor(t, raw, "raw dispatch")] = true
+	}
+}
+
+// checkReady checks the READY the fake gateway sends for the test bot.
+func checkReady(t *testing.T, r *Ready, sessionID string) {
+	t.Helper()
+	if r.SessionID != sessionID || r.User.ID != "u-bot" || r.User.BotID != "b-1" || !r.User.Bot {
+		t.Fatalf("ready = %+v", r)
 	}
 }
 
