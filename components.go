@@ -1,6 +1,6 @@
 package mnema
 
-// ComponentType is the type of a message component (Discord's numbers).
+// ComponentType is the type of a message component (the bot API's numbers).
 type ComponentType int
 
 // The component types the server offers.
@@ -36,7 +36,7 @@ const (
 )
 
 // Component is one element of a message's components or of a modal, in
-// Discord's JSON: an action row, a button, a select menu or a text input.
+// the bot API's JSON: an action row, a button, a select menu or a text input.
 // Which fields apply depends on Type. The builders (ActionRow, Button,
 // StringSelect, ...) fill it; Validate checks the documented limits.
 type Component struct {

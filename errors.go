@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-// Discord error codes the bot API answers (doc/bots.md, REST API).
+// JSON error codes the bot API answers (doc/bots.md, REST API).
 const (
 	CodeUnknownChannel     = 10003
 	CodeUnknownMessage     = 10008
@@ -18,12 +18,12 @@ const (
 	CodeTooLarge           = 40005
 )
 
-// RESTError is a non-2xx answer of the REST API, in Discord's error shape. A
+// RESTError is a non-2xx answer of the REST API ({message, code}). A
 // 429 that persisted beyond the retries also carries RetryAfter and Global.
 type RESTError struct {
 	// Status is the HTTP status.
 	Status int
-	// Code is Discord's JSON error code (0 for plain HTTP errors).
+	// Code is the JSON error code (0 for plain HTTP errors).
 	Code int
 	// Message is the server's text.
 	Message string
