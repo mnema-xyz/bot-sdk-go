@@ -9,7 +9,7 @@ import (
 	"testing"
 )
 
-func TestBuildersProduceDiscordsJSON(t *testing.T) {
+func TestBuildersProduceTheDocumentedJSON(t *testing.T) {
 	rows := []Component{
 		ActionRow(SuccessButton("deploy:v2.4", "Deploy"), SecondaryButton("cancel", "Cancel"), LinkButton("https://example.org/changes", "Changelog")),
 		ActionRow(StringSelect{CustomID: "env", Placeholder: "Environment", Options: []SelectOption{{Label: "Staging", Value: "staging"}, {Label: "Production", Value: "prod", Default: true}}}),

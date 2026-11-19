@@ -4,9 +4,9 @@ import "strconv"
 
 // Permission is a permission bit of Mnema Talk's permission catalogue (GET /api/permissions).
 //
-// WARNING: Mnema's permission bit values are NOT Discord's bit values!
-// Do not reuse Discord's permission constants or PermissionFlagsBits.
-// Compute bit values from this catalogue or pass permission keys.
+// Mnema's permission bits have their own values: bit constants from other
+// chat libraries do not match them. Use these constants, compute bits from
+// the catalogue or pass permission keys.
 type Permission uint64
 
 const (

@@ -43,7 +43,8 @@ type Interaction struct {
 	answered bool
 }
 
-// InteractionMember wraps the member of an interaction, as Discord does.
+// InteractionMember is the member who caused an interaction, with their
+// permissions in the channel.
 type InteractionMember struct {
 	User        User   `json:"user"`
 	Permissions string `json:"permissions,omitempty"`

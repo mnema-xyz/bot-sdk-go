@@ -280,7 +280,7 @@ func (r *REST) Commands(ctx context.Context) ([]Command, error) {
 	return out, err
 }
 
-// SetCommands replaces all of the bot's commands (Discord's bulk overwrite).
+// SetCommands replaces all of the bot's commands (a bulk overwrite).
 func (r *REST) SetCommands(ctx context.Context, cmds []CommandInput) ([]Command, error) {
 	list := make([]CommandInput, 0, len(cmds))
 	for _, c := range cmds {

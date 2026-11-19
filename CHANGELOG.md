@@ -8,6 +8,7 @@ All notable changes to `github.com/mnema-xyz/bot-sdk-go`. Versions follow
 - Added `REST.DownloadAttachment` (`GET /media/{id}`) with `DownloadOptions{MaxBytes, Timeout}`: a size over `MaxBytes` fails with `*MaxBytesError` before or while reading, redirects are not followed, and a `404` matches `ErrNotFound`.
 - Added `ErrNotFound`: `errors.Is(err, ErrNotFound)` is true for every REST `404`.
 - Added the documented `Filename`, `ContentType` and `Size` fields to `Attachment`.
+- Docs describe the API's own JSON, codes and permission bits without comparisons to other products.
 
 ## 0.2.0 (2026-11-15)
 

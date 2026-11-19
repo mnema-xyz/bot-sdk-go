@@ -160,7 +160,7 @@ func TestRoutesUseTheirDocumentedPaths(t *testing.T) {
 	}
 }
 
-func TestErrorsMapToRESTErrorWithDiscordCodes(t *testing.T) {
+func TestErrorsMapToRESTErrorWithTheirCodes(t *testing.T) {
 	r, _ := restServer(t, func(w http.ResponseWriter, _ *http.Request, _ int) {
 		writeJSON(w, 404, map[string]any{"message": "Unknown Channel", "code": 10003})
 	})

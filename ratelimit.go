@@ -129,8 +129,8 @@ func (l *limiter) pause(key string, global bool, d time.Duration) {
 var uuidPattern = regexp.MustCompile(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$`)
 
 // bucketKey names the bucket of a route: method and path with ids replaced,
-// except a channel id, which keeps channels apart (Discord's "major
-// parameter"). Posting a message and uploading a file share the per-channel
+// except a channel id, which keeps channels apart (the route's major
+// parameter). Posting a message and uploading a file share the per-channel
 // message bucket; all reactions of a message share one bucket.
 func bucketKey(method, path string) string {
 	path, _, _ = strings.Cut(path, "?")

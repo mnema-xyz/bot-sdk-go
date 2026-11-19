@@ -178,8 +178,8 @@ at most 5 updates a minute.
 Ids are UUID strings. Optional fields of edits are pointers: `mnema.Ptr("text")`;
 `Components: &[]mnema.Component{}` removes the components.
 
-A non-2xx answer is a `*mnema.RESTError{Status, Code, Message}` with Discord's
-codes (`mnema.CodeUnknownChannel`, `CodeMissingPermissions`, ...):
+A non-2xx answer is a `*mnema.RESTError{Status, Code, Message}` with the bot
+API's JSON error codes (`mnema.CodeUnknownChannel`, `CodeMissingPermissions`, ...):
 
 ```go
 var re *mnema.RESTError
@@ -262,7 +262,7 @@ A command can restrict who can see and run it in a channel with `DefaultMemberPe
 - `mnema.Permission` bitfield (e.g. `mnema.PermissionBanMembers` or `mnema.PermissionAdministrator | mnema.PermissionManageChannels`), a slice of permission keys (e.g. `[]string{"ban_members"}`), or a decimal bitfield string (`"524288"`).
 
 > [!WARNING]
-> Mnema's permission bit values are **not** Discord's bit values (e.g. `discord.js`'s `PermissionFlagsBits`). Do not reuse Discord's permission constants; use `mnema.Permission` constants, pass permission keys (e.g. `[]string{"administrator"}`), or compute them from Mnema's catalogue (`GET /api/permissions`).
+> Mnema's permission bits have their own values: bit constants from other chat libraries do not match them. Use the `mnema.Permission` constants, pass permission keys (e.g. `[]string{"administrator"}`), or compute the bits from Mnema's catalogue (`GET /api/permissions`).
 
 | Method | Callback | For |
 |---|---|---|
@@ -309,7 +309,7 @@ modal := mnema.NewModal("feedback", "Feedback",
 Builders: `ActionRow`, `Button{...}` and `PrimaryButton`, `SecondaryButton`,
 `SuccessButton`, `DangerButton`, `LinkButton`, `StringSelect{...}`,
 `UserSelect{...}`, `RoleSelect{...}`, `ChannelSelect{...}`, `TextInput{...}`,
-`NewModal`. `mnema.Component` is Discord's JSON and can be built by hand too.
+`NewModal`. `mnema.Component` is the plain JSON of the bot API and can be built by hand too.
 `Validate()` on each builder, `mnema.ValidateComponents(rows)` and
 `Modal.Validate()` check the documented limits (5 rows, 25 components, 5
 buttons or one select per row, `custom_id` 1 to 100 characters and unique,
