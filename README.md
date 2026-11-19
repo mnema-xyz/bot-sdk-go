@@ -121,7 +121,13 @@ mnema.New(mnema.Options{
   `ActivityPlaying` (0), `ActivityListening` (2), `ActivityWatching` (3),
   `ActivityCustom` (4), `ActivityCompeting` (5).
 - `Logger`: `*slog.Logger`, nil defaults to `slog.Default()`.
-- `HTTPClient`: `*http.Client`, nil uses a default client with a 60-second timeout.
+- `HTTPClient`: `*http.Client`, nil uses a default client with a 60-second
+  timeout that does not follow redirects: a redirect answer fails the call
+  with a `*mnema.RESTError` carrying its status, so the bot token goes to
+  `BaseURL` only. A client you pass keeps its own redirect policy (Go's
+  default follows redirects and keeps `Authorization` on the same host, also
+  from `https` to `http`); set `CheckRedirect` on it if you need the same
+  guarantee. Attachment downloads never follow redirects.
 - `MaxRetries`: bounds how often a request answered with 429 is retried (0 means 3).
 - `GatewayURL`: overrides the gateway address returned by `GET /gateway`.
 - `HandlerConcurrency`: bounds concurrent dispatch handler goroutines (0 means 64).
@@ -327,7 +333,9 @@ upgrade, and identifies with the intents and the presence. It sends
 heartbeats every interval, the first after a random part of it; a heartbeat
 whose ACK has not come by the next one drops the connection. After a drop it
 reconnects and **resumes** (session ID and last sequence number, within the
-server's 2 minutes); when the server answers `INVALID_SESSION` it identifies
+server's 2 minutes) at READY's `resume_gateway_url`, of which only the path
+and query are used: the scheme, host and port stay those of the address the
+session connected to; when the server answers `INVALID_SESSION` it identifies
 again on the same connection, and after `4000`, `4003` or `4005` it starts a
 new session. Reconnects wait with exponential backoff and jitter from 1 to 60
 seconds (at least 30 seconds after `4008`). Outgoing frames stay within 4096

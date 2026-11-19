@@ -38,7 +38,7 @@ func newFakeGateway(t *testing.T, intervalMS int) *fakeGateway {
 			if err != nil {
 				return
 			}
-			fc := &fakeConn{ws: ws, header: r.Header.Clone(), frames: make(chan frame, 64)}
+			fc := &fakeConn{ws: ws, header: r.Header.Clone(), query: r.URL.RawQuery, frames: make(chan frame, 64)}
 			fc.write(t, opHello, map[string]int{"heartbeat_interval": g.interval})
 			go fc.readLoop()
 			g.conns <- fc
@@ -98,6 +98,7 @@ func (g *fakeGateway) next(t *testing.T) *fakeConn {
 type fakeConn struct {
 	ws     *websocket.Conn
 	header http.Header
+	query  string // the upgrade's query string
 	frames chan frame
 }
 

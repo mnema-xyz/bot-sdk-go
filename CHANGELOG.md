@@ -3,6 +3,12 @@
 All notable changes to `github.com/mnema-xyz/bot-sdk-go`. Versions follow
 [semver](https://semver.org).
 
+## Unreleased
+
+- The gateway resumes at the path and query of READY's `resume_gateway_url` on the scheme, host and port of the address the session connected to; an unparsable resume address uses that address.
+- The default REST client no longer follows redirects: a redirect answer fails the call with a `*RESTError` carrying its status. A client passed as `Options.HTTPClient` keeps its own redirect policy.
+- Errors of failed REST requests name interaction and webhook routes with the token replaced by `:token`, also in the wrapped `*url.Error`.
+
 ## 0.3.0 (2026-11-19)
 
 - Added `REST.DownloadAttachment` (`GET /media/{id}`) with `DownloadOptions{MaxBytes, Timeout}`: a size over `MaxBytes` fails with `*MaxBytesError` before or while reading, redirects are not followed, and a `404` matches `ErrNotFound`.

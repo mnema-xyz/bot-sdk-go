@@ -27,7 +27,8 @@ type Options struct {
 	// Logger receives the SDK's logs; nil means slog.Default().
 	Logger *slog.Logger
 	// HTTPClient sends the REST requests; nil means a client with a 60 s
-	// timeout.
+	// timeout that does not follow redirects (a redirect fails the call with
+	// a *RESTError). A client passed here keeps its own redirect policy.
 	HTTPClient *http.Client
 	// MaxRetries bounds how often a request answered with 429 is sent again
 	// (0 means 3, a negative value none).

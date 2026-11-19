@@ -138,8 +138,8 @@ func bucketKey(method, path string) string {
 	if method == "POST" && len(parts) == 4 && parts[1] == "channels" && (parts[3] == "messages" || parts[3] == "upload") {
 		return "post-message:" + parts[2]
 	}
-	if len(parts) > 1 && parts[1] == "interactions" {
-		return method + " /interactions/:id/:token/" + strings.Join(parts[min(4, len(parts)):], "/")
+	if tokenIndex(parts) >= 0 {
+		return method + " /" + parts[1] + "/:id/:token/" + strings.Join(parts[4:], "/")
 	}
 	for i, p := range parts {
 		if p == "reactions" {
@@ -151,6 +151,27 @@ func bucketKey(method, path string) string {
 		}
 	}
 	return method + " " + strings.Join(parts, "/")
+}
+
+// tokenIndex is the index of the path segment that carries an interaction
+// or webhook token (/interactions/{id}/{token}/..., /webhooks/{id}/{token}),
+// or -1 when the route has none.
+func tokenIndex(parts []string) int {
+	if len(parts) >= 4 && parts[0] == "" && (parts[1] == "interactions" || parts[1] == "webhooks") {
+		return 3
+	}
+	return -1
+}
+
+// redactPath is path with its token segment (see tokenIndex) replaced by
+// ":token", for logs and errors: the token answers the interaction without
+// the bot token.
+func redactPath(path string) string {
+	parts := strings.Split(path, "/")
+	if i := tokenIndex(parts); i >= 0 {
+		parts[i] = ":token"
+	}
+	return strings.Join(parts, "/")
 }
 
 func isMessagePost(key string) bool { return strings.HasPrefix(key, "post-message:") }

@@ -51,7 +51,10 @@ func NewREST(o Options) (*REST, error) {
 	}
 	hc := o.HTTPClient
 	if hc == nil {
-		hc = &http.Client{Timeout: 60 * time.Second}
+		// The bot API answers without redirects; one is answered as an error
+		// rather than followed, so the token is sent to the configured
+		// address only.
+		hc = &http.Client{Timeout: 60 * time.Second, CheckRedirect: refuseRedirect}
 	}
 	retries := o.MaxRetries
 	switch {
@@ -62,6 +65,10 @@ func NewREST(o Options) (*REST, error) {
 	}
 	return &REST{baseURL: base, token: o.Token, http: hc, limits: newLimiter(), maxRetries: retries, logger: loggerOr(o.Logger)}, nil
 }
+
+// refuseRedirect makes a client return a redirect answer instead of
+// following it.
+func refuseRedirect(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }
 
 func loggerOr(l *slog.Logger) *slog.Logger {
 	if l == nil {
@@ -160,14 +167,26 @@ func (r *REST) send(ctx context.Context, req request) (int, http.Header, []byte,
 	}
 	res, err := r.http.Do(hr)
 	if err != nil {
-		return 0, nil, nil, fmt.Errorf("mnema: %s %s: %w", req.method, req.path, err)
+		return 0, nil, nil, r.requestError("", req, err)
 	}
 	defer func() { _ = res.Body.Close() }()
 	b, err := io.ReadAll(io.LimitReader(res.Body, maxResponseBytes))
 	if err != nil {
-		return 0, nil, nil, fmt.Errorf("mnema: read answer of %s %s: %w", req.method, req.path, err)
+		return 0, nil, nil, r.requestError("read answer of ", req, err)
 	}
 	return res.StatusCode, res.Header, b, nil
+}
+
+// requestError wraps a failed request's err with the method and the path,
+// with an interaction or webhook token redacted there and in a *url.Error's
+// URL.
+func (r *REST) requestError(what string, req request, err error) error {
+	path := redactPath(req.path)
+	var ue *url.Error
+	if errors.As(err, &ue) {
+		ue.URL = r.baseURL + BasePath + path
+	}
+	return fmt.Errorf("mnema: %s%s %s: %w", what, req.method, path, err)
 }
 
 func decodeAnswer(status int, body []byte, out any) (bool, error) {

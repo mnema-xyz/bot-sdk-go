@@ -85,7 +85,7 @@ func (r *REST) DownloadAttachment(ctx context.Context, id string, opts DownloadO
 // answer with its body open; other answers become errors.
 func (r *REST) download(ctx context.Context, path string) (*http.Response, error) {
 	hc := *r.http
-	hc.CheckRedirect = func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }
+	hc.CheckRedirect = refuseRedirect
 	key := bucketKey(http.MethodGet, path)
 	for attempt := 0; ; attempt++ {
 		if err := r.limits.acquire(ctx, key); err != nil {
