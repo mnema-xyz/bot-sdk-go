@@ -3,7 +3,7 @@
 All notable changes to `github.com/mnema-xyz/bot-sdk-go`. Versions follow
 [semver](https://semver.org).
 
-## Unreleased
+## 0.4.0 (2026-11-20)
 
 - The gateway resumes at READY's `resume_gateway_url` only when it names the host and port of the address the session connected to (or is relative), and then uses only its path and query on that address's scheme. Any other resume address, an unparsable one, or one with a `..` path segment falls back to the address the session connected to.
 - The default REST client no longer follows redirects: a redirect answer fails the call with a `*RESTError` carrying its status. A client passed as `Options.HTTPClient` keeps its own redirect policy.
