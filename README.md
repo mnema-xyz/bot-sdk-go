@@ -128,7 +128,8 @@ mnema.New(mnema.Options{
   default follows redirects and keeps `Authorization` on the same host, also
   from `https` to `http`); set `CheckRedirect` on it if you need the same
   guarantee. Attachment downloads never follow redirects.
-- `MaxRetries`: bounds how often a request answered with 429 is retried (0 means 3).
+- `MaxRetries`: bounds how often a request answered with 429 is retried (0 means 3,
+  a negative value none).
 - `GatewayURL`: overrides the gateway address returned by `GET /gateway`.
 - `HandlerConcurrency`: bounds concurrent dispatch handler goroutines (0 means 64).
 
@@ -229,8 +230,9 @@ uploads (each channel has its own bucket, other routes have one per route). A
 `429` is waited out (`retry_after` of the body, else the `Retry-After` header; a
 `global` one holds back every request) and sent again, at most
 `Options.MaxRetries` times (default 3); then the `429` is returned as a
-`*RESTError` with `RetryAfter` and `Global`. Waiting stops when the context
-ends. Slow mode answers `429` the same way. Requests carry
+`*RESTError` with `RetryAfter` and `Global`. A `429` that asks for more than
+60 seconds (`mnema.MaxRetryAfter`) is not waited for: it is returned at once.
+Waiting stops when the context ends. Slow mode answers `429` the same way. Requests carry
 `User-Agent: mnema-talk-sdk-go/<module version>` and nothing personal.
 
 ## Slash commands and interactions
@@ -411,6 +413,6 @@ expects it (`talk/sdk/go`), and runs `go test -tags=integration -count=1 -v -run
 
 ## License
 
-[MIT](LICENSE). Earlier copies in the mnema-talk repository were AGPL-3.0-only;
+[MIT](LICENSE). Earlier copies in the Mnema Talk repository (`sdk/go`) were AGPL-3.0-only;
 0.1.0 and later are MIT. Mnema Talk itself stays AGPL-3.0. Security reports go to
 [SECURITY.md](SECURITY.md).
