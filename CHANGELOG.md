@@ -3,6 +3,10 @@
 All notable changes to `github.com/mnema-xyz/bot-sdk-go`. Versions follow
 [semver](https://semver.org).
 
+## Unreleased
+
+- The heartbeat interval from HELLO is clamped to between 1 second and 5 minutes, so a server that says `1` cannot make the client beat in a tight loop and one that says a day cannot leave a dead connection undetected.
+
 ## 0.4.0 (2026-11-20)
 
 - The gateway resumes at READY's `resume_gateway_url` only when it names the host and port of the address the session connected to (or is relative), and then uses only its path and query on that address's scheme. Any other resume address, an unparsable one, or one with a `..` path segment falls back to the address the session connected to.
