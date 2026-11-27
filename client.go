@@ -61,6 +61,7 @@ type Client struct {
 	// backoff policy; tests shorten it.
 	minBackoff, maxBackoff, rateLimitedBackoff time.Duration
 	helloTimeout                               time.Duration
+	minHeartbeat                               time.Duration // lower bound of the HELLO interval; tests shorten it
 }
 
 type handlers struct {
@@ -93,7 +94,7 @@ func New(o Options) (*Client, error) {
 	return &Client{
 		REST: rest, opts: o, logger: loggerOr(o.Logger), presence: o.Presence,
 		minBackoff: time.Second, maxBackoff: 60 * time.Second, rateLimitedBackoff: 30 * time.Second,
-		helloTimeout: 30 * time.Second,
+		helloTimeout: 30 * time.Second, minHeartbeat: minHeartbeatInterval,
 	}, nil
 }
 

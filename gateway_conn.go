@@ -130,7 +130,25 @@ func (cn *conn) readHello() (time.Duration, error) {
 	if f.Op != opHello || json.Unmarshal(f.D, &h) != nil || h.HeartbeatInterval <= 0 {
 		return 0, fmt.Errorf("mnema: expected HELLO, got op %d", f.Op)
 	}
-	return time.Duration(h.HeartbeatInterval) * time.Millisecond, nil
+	return cn.c.clampHeartbeat(h.HeartbeatInterval), nil
+}
+
+// The bounds of the heartbeat interval accepted from HELLO: a server that says
+// 1 must not make the client beat in a tight loop, one that says a day must not
+// leave a dead connection undetected.
+const (
+	minHeartbeatInterval = time.Second
+	maxHeartbeatInterval = 5 * time.Minute
+)
+
+// clampHeartbeat is the HELLO interval (in milliseconds) within the bounds.
+// The comparison is on the milliseconds, so a huge value cannot overflow the
+// Duration.
+func (c *Client) clampHeartbeat(ms int) time.Duration {
+	if ms >= int(maxHeartbeatInterval/time.Millisecond) {
+		return maxHeartbeatInterval
+	}
+	return max(time.Duration(ms)*time.Millisecond, c.minHeartbeat)
 }
 
 // greet resumes the session when there is one, and identifies otherwise.

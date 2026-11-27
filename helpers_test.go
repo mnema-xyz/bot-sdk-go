@@ -77,6 +77,7 @@ func (g *fakeGateway) client(t *testing.T, o Options) *Client {
 	if err != nil {
 		t.Fatal(err)
 	}
+	c.minHeartbeat = time.Millisecond
 	c.minBackoff, c.maxBackoff, c.rateLimitedBackoff = 5*time.Millisecond, 20*time.Millisecond, 150*time.Millisecond
 	return c
 }
